@@ -1,23 +1,36 @@
-from django.urls import path
-from rest_framework.routers import DefaultRouter
+"""
+URL configuration.
 
-from .auth_views import LoginView, LogoutView
-from .views import (
-    AttendanceViewSet, EmployeeViewSet, LeaveViewSet,
-    PayrollViewSet, UserViewSet
-)
+One Django server now does everything:
+  http://127.0.0.1:8000/app/login.html   -> the website (frontend folder)
+  http://127.0.0.1:8000/api/...          -> the API
+"""
+
+from django.conf import settings
+from django.contrib import admin
+from django.http import JsonResponse
+from django.urls import include, path, re_path
+from django.views.generic import RedirectView
+from django.views.static import serve
 
 
-router = DefaultRouter()
+def home(request):
+    return JsonResponse({
+        "message": "Employee Management System API is running successfully!",
+        "status": "Success"
+    })
 
-router.register('employees', EmployeeViewSet, basename='employee')
-router.register('attendance', AttendanceViewSet, basename='attendance')
-router.register('leaves', LeaveViewSet, basename='leave')
-router.register('payroll', PayrollViewSet, basename='payroll')
-router.register('users', UserViewSet, basename='users')
+
+# The frontend folder sits next to the backend folder
+FRONTEND_DIR = settings.BASE_DIR.parent / 'frontend'
 
 
 urlpatterns = [
-    path('login/', LoginView.as_view(), name='login'),
-    path('logout/', LogoutView.as_view(), name='logout'),
-] + router.urls
+    path('', home, name='home'),
+    path('admin/', admin.site.urls),
+    path('api/', include('employees.urls')),
+
+    # The website
+    path('app/', RedirectView.as_view(url='/app/login.html')),
+    re_path(r'^app/(?P<path>.*)$', serve, {'document_root': FRONTEND_DIR}),
+]
